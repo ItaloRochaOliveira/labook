@@ -3,24 +3,20 @@ import { BaseDatabase } from "../database/BaseDatabase";
 export class PostDatabase extends BaseDatabase {
   private POST_TABLE = "posts";
 
-  findPosts = async (headers: any): Promise<any> => {
-    const postsDB = await BaseDatabase.connection(this.POST_TABLE).where({
-      id: headers,
-    });
+  findAllPosts = async (): Promise<any> => {
+    const postsDB = await BaseDatabase.connection(this.POST_TABLE);
 
     return postsDB;
   };
 
-  createPost = async (newPost: any, headers: any): Promise<any> => {
-    await BaseDatabase.connection(this.POST_TABLE).insert(newPost).where({
-      id: headers,
-    });
+  createPost = async (newPost: any): Promise<any> => {
+    await BaseDatabase.connection(this.POST_TABLE).insert(newPost);
 
     return "Criado post com sucesso!";
   };
 
   editPost = async (updatePost: any, headers: any): Promise<any> => {
-    await BaseDatabase.connection(this.POST_TABLE).insert(updatePost).where({
+    await BaseDatabase.connection(this.POST_TABLE).update(updatePost).where({
       id: headers,
     });
 
