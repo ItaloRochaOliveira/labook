@@ -1,3 +1,4 @@
+-- Active: 1682687503221@@127.0.0.1@3306
 CREATE TABLE users(
     id TEXT UNIQUE PRIMARY KEY NOT NULL,
     name TEXT NOT NULL,
@@ -13,8 +14,8 @@ CREATE TABLE posts (
     content TEXT NOT NULL,
     likes INTEGER NOT NULL,
     dislikes INTEGER NOT NULL,
-    created_at INTEGER NOT NULL,
-    updated_ate INTEGER NOT NULL,
+    created_at TEXT NOT NULL,
+    updated_at TEXT NOT NULL,
 
     Foreign Key (creator_id) REFERENCES users(id)
 );
@@ -26,4 +27,7 @@ CREATE TABLE likes_dislikes(
 
     Foreign Key (user_id) REFERENCES users(id),
     Foreign Key (post_id) REFERENCES posts(id)
-)
+);
+
+SELECT * FROM users;
+
