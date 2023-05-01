@@ -9,27 +9,29 @@ export class PostDatabase extends BaseDatabase {
     return postsDB;
   };
 
+  findPostById = async (id: string) => {
+    const postDB = await BaseDatabase.connection(this.POST_TABLE).where({ id });
+
+    return postDB;
+  };
+
   createPost = async (newPost: any): Promise<any> => {
     await BaseDatabase.connection(this.POST_TABLE).insert(newPost);
 
     return "Criado post com sucesso!";
   };
 
-  editPost = async (updatePost: any, headers: any): Promise<any> => {
+  editPost = async (updatePost: any, id: string): Promise<any> => {
     await BaseDatabase.connection(this.POST_TABLE).update(updatePost).where({
-      id: headers,
+      id,
     });
 
-    return "Criado post com sucesso!";
+    return "Editado post com sucesso!";
   };
 
-  deletePost = async (id: any, headers: any) => {
-    await BaseDatabase.connection(this.POST_TABLE).del().where(id);
+  deletePost = async (id: string) => {
+    await BaseDatabase.connection(this.POST_TABLE).del().where({ id });
 
     return "Excluido com sucesso!";
-  };
-
-  like = async (headers: any) => {
-    await BaseDatabase.connection(this.POST_TABLE).update(1).where(headers);
   };
 }
