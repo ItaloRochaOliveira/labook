@@ -23,11 +23,14 @@ CREATE TABLE posts (
 CREATE TABLE likes_dislikes(
     user_id TEXT NOT NULL,
     post_id TEXT NOT NULL,
-    like INTEGER NOT NULL,
+    like INTEGER ,
 
     Foreign Key (user_id) REFERENCES users(id),
     Foreign Key (post_id) REFERENCES posts(id)
 );
 
 SELECT * FROM users;
+
+SELECT * FROM posts;
+SELECT * FROM likes_dislikes;
 

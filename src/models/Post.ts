@@ -1,3 +1,12 @@
+export interface PostDB {
+  id: string;
+  content: string;
+  likes: number;
+  dislikes: number;
+  created_at: string;
+  updated_at: string;
+}
+
 interface CreatorObj {
   id: string;
   name: string;
@@ -11,7 +20,7 @@ export class Post {
     private dislikes: number,
     private createdAt: string,
     private updatedAt: string,
-    private creator: CreatorObj
+    private creator?: CreatorObj
   ) {}
 
   public get ID(): string {
@@ -38,7 +47,7 @@ export class Post {
     return this.updatedAt;
   }
 
-  public get CREATOR(): CreatorObj {
+  public get CREATOR(): CreatorObj | undefined {
     return this.creator;
   }
 
@@ -66,7 +75,7 @@ export class Post {
     this.updatedAt = newUpdateAt;
   }
 
-  public set CREATOR(newCreator: CreatorObj) {
+  public set CREATOR(newCreator: CreatorObj | undefined) {
     this.creator = newCreator;
   }
 }
