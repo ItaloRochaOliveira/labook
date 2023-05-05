@@ -51,9 +51,9 @@ export class PostBusiness {
       updated_at: "",
     };
 
-    const result = await this.postDatabase.createPost(newPost);
+    const response = await this.postDatabase.createPost(newPost);
 
-    return result;
+    return response;
   };
 
   updatePost = async (content: string, id: string) => {
@@ -108,22 +108,19 @@ export class PostBusiness {
       like: likeDB,
     };
 
-    const [postExistDB] =
+    const [postLikedExistDB] =
       await this.likesOrDislikeDatabase.findLikesAndDislikesById(idUser);
-
-    console.log(postExistDB);
 
     const [postDB] = await this.postDatabase.findPostById(idPost);
 
-    console.log(postDB);
-
-    if (!postExistDB) {
+    if (!postLikedExistDB) {
       let updatePost;
       if (!like) {
         updatePost = { ...postDB, dislike: postDB.dislike + 1 };
       } else {
         updatePost = { ...postDB, likes: postDB.likes + 1 };
       }
+
       await this.postDatabase.editPost(updatePost, idPost);
 
       response = await this.likesOrDislikeDatabase.newLikesDislikes(
@@ -132,31 +129,32 @@ export class PostBusiness {
     } else {
       let updatePost;
 
-      if (!like) {
+      if (!like && postLikedExistDB.like === null) {
         updatePost = { ...postDB, dislikes: postDB.dislikes + 1 };
-      } else {
+      } else if (like && postLikedExistDB.like === null) {
         updatePost = { ...postDB, likes: postDB.likes + 1 };
       }
 
-      if (likeDB === postExistDB.like) {
+      if (likeDB === postLikedExistDB.like) {
         likeDB === 0
           ? (updatePost = { ...postDB, dislikes: postDB.dislikes - 1 })
           : (updatePost = { ...postDB, likes: postDB.likes - 1 });
 
         newUserLikeOrDislikeDB = { ...newUserLikeOrDislikeDB, like: null };
-      } else if (likeDB === postExistDB.like) {
-        updatePost = { ...postDB, dislikes: postDB.dislikes - 1 };
-        newUserLikeOrDislikeDB = { ...newUserLikeOrDislikeDB, like: null };
       }
 
-      if (postExistDB.like === 1 && likeDB === 0) {
-        console.log("entrou");
-        updatePost = { ...postDB, likes: postDB.likes - 1 };
-        updatePost = { ...postDB, dislikes: postDB.dislikes + 1 };
-      } else if (postExistDB.like === 0 && likeDB === 1) {
-        console.log("entrou");
-        updatePost = { ...postDB, dislikes: postDB.dislikes - 1 };
-        updatePost = { ...postDB, likes: postDB.likes + 1 };
+      if (likeDB === 0 && postLikedExistDB.like === 1) {
+        updatePost = {
+          ...postDB,
+          dislikes: postDB.dislikes + 1,
+          likes: postDB.likes - 1,
+        };
+      } else if (likeDB === 1 && postLikedExistDB.like === 0) {
+        updatePost = {
+          ...postDB,
+          dislikes: postDB.dislikes - 1,
+          likes: postDB.likes + 1,
+        };
       }
 
       await this.postDatabase.editPost(updatePost, idPost);
