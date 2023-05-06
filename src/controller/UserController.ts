@@ -8,12 +8,9 @@ export class UserController {
     try {
       const newUser = req.body;
 
-      const token = await this.userBusiness.signup(newUser);
+      const response = await this.userBusiness.signup(newUser);
 
-      res.status(200).send({
-        message: "user criado com sucesso",
-        token,
-      });
+      res.status(200).send(response);
     } catch (error) {
       console.log(error);
 
@@ -29,9 +26,9 @@ export class UserController {
     try {
       const user = req.body;
 
-      const token = await this.userBusiness.login(user);
+      const response = await this.userBusiness.login(user);
 
-      res.status(200).send(token);
+      res.status(200).send(response);
     } catch (error) {
       console.log(error);
 

@@ -1,36 +1,93 @@
 import { UserDatabase } from "../database/UserDatabase";
+import { LoginInputDTO } from "../dtos/userDTO/login.dto";
+import { SignupInputDTO, SignupOutputDTO } from "../dtos/userDTO/signup.dto";
+import { TokenPayload, USER_ROLES, UserDB, Users } from "../models/Users";
+import { HashManager } from "../services/HashManager";
+import { IdGerator } from "../services/IdGerator";
+import { TokenManager } from "../services/TokenManager";
 
 export class userBusiness {
-  constructor(private userDatabase: UserDatabase) {}
+  constructor(
+    private userDatabase: UserDatabase,
+    private idGerator: IdGerator,
+    private hashManager: HashManager,
+    private tokenManager: TokenManager
+  ) {}
 
-  getRandomInt() {
-    const min = Math.ceil(1);
-    const max = Math.floor(10);
-    return Math.floor(Math.random() * (max - min) + min);
-  }
-
-  signup = async (input: any) => {
+  signup = async (input: SignupInputDTO) => {
     const { name, email, password } = input;
 
-    const newUser = {
-      id: `u${this.getRandomInt()}${this.getRandomInt()}${this.getRandomInt()}`,
+    const id = this.idGerator.gerate();
+
+    const passwordHash = await this.hashManager.hash(password);
+
+    const newUser = new Users(
+      id,
       name,
       email,
-      password,
-      role: "normal",
-      created_at: new Date().toISOString(),
+      passwordHash,
+      USER_ROLES.NORMAL,
+      new Date().toISOString()
+    );
+
+    const newUserDB = newUser.toDBModel();
+
+    await this.userDatabase.signup(newUserDB);
+
+    const TokenPayload = {
+      id: newUser.ID,
+      name: newUser.NAME,
+      role: newUser.ROLE,
     };
 
-    const token = await this.userDatabase.signup(newUser);
+    const token: string = this.tokenManager.createToken(TokenPayload);
 
-    return token;
+    const response: SignupOutputDTO = {
+      message: "user criado com sucesso",
+      token,
+    };
+
+    return response;
   };
 
-  login = async (user: any) => {
-    const { email, password } = user;
+  login = async (userLogin: LoginInputDTO) => {
+    const { email, password } = userLogin;
 
-    const token = await this.userDatabase.login(email, password);
+    const userDB = await this.userDatabase.findUserByEmail(email);
 
-    return token;
+    if (!userDB) {
+      throw new Error("Email informado errado.");
+    }
+
+    const passwordHash = userDB.password;
+
+    const isPasswordCorrect = await this.hashManager.compare(
+      password,
+      passwordHash
+    );
+
+    if (!isPasswordCorrect) {
+      throw new Error("Senha informada incorreta.");
+    }
+
+    const user = new Users(
+      userDB.id,
+      userDB.name,
+      userDB.email,
+      userDB.password,
+      userDB.role,
+      userDB.created_at
+    );
+
+    const tokenPayload = user.toUserPayloadModel();
+
+    const token = this.tokenManager.createToken(tokenPayload);
+
+    const response = {
+      message: "Usuário logado com sucesso.",
+      token,
+    };
+
+    return response;
   };
 }

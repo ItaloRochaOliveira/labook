@@ -1,30 +1,24 @@
 import { BaseDatabase } from "../database/BaseDatabase";
+import { UserDB } from "../models/Users";
 
 export class UserDatabase extends BaseDatabase {
   private USER_TABLE = "users";
 
-  signup = async (newUser: any): Promise<any> => {
-    const token = await BaseDatabase.connection(this.USER_TABLE).insert(
-      newUser
-    );
-    return token;
+  signup = async (newUserDB: UserDB): Promise<void> => {
+    await BaseDatabase.connection(this.USER_TABLE).insert(newUserDB);
   };
 
-  login = async (email: any, password: any): Promise<any> => {
-    const token = await BaseDatabase.connection(this.USER_TABLE)
-      .where({
-        email,
-      })
-      .andWhere({
-        password,
-      });
-
-    return token;
-  };
-
-  findUserById = async (id: string) => {
+  findUserById = async (id: string): Promise<UserDB> => {
     const [user] = await BaseDatabase.connection(this.USER_TABLE).where({ id });
-    console.log(user);
+
+    return user;
+  };
+
+  findUserByEmail = async (email: string): Promise<UserDB> => {
+    const [user] = await BaseDatabase.connection(this.USER_TABLE).where({
+      email,
+    });
+
     return user;
   };
 }

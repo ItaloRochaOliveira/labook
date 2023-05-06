@@ -5,10 +5,10 @@ export class PostController {
   constructor(private postBusiness: PostBusiness) {}
 
   getAllPosts = async (req: Request, res: Response) => {
-    // const headers = req.headers.authorization;
-
     try {
-      const posts = await this.postBusiness.getPosts();
+      const token = req.headers.authorization as string;
+
+      const posts = await this.postBusiness.getPosts(token);
 
       res.status(200).send(posts);
     } catch (error) {
@@ -26,8 +26,12 @@ export class PostController {
     // const headers = req.headers.authorization;
 
     try {
+      const token = req.headers.authorization as string;
       const { content } = req.body;
-      const result = await this.postBusiness.createPost(content);
+
+      const userPost = { token, content };
+
+      const result = await this.postBusiness.createPost(userPost);
 
       res.status(200).send(result);
     } catch (error) {

@@ -4,6 +4,8 @@ import { PostBusiness } from "../business/PostBusiness";
 import { PostDatabase } from "../database/PostDatabase";
 import { UserDatabase } from "../database/UserDatabase";
 import { LikesDislikesDatabase } from "../database/LikesDislikesDatabase";
+import { TokenManager } from "../services/TokenManager";
+import { IdGerator } from "../services/IdGerator";
 
 export const postsRoute = express.Router();
 
@@ -11,7 +13,9 @@ const postController = new PostController(
   new PostBusiness(
     new PostDatabase(),
     new UserDatabase(),
-    new LikesDislikesDatabase()
+    new LikesDislikesDatabase(),
+    new TokenManager(),
+    new IdGerator()
   )
 );
 
