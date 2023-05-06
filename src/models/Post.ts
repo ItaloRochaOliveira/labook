@@ -1,3 +1,13 @@
+export interface PostModel {
+  id: string;
+  content: string;
+  likes: number;
+  dislikes: number;
+  createdAt: string;
+  updatedAt: string;
+  creator: CreatorObj | undefined;
+}
+
 export interface PostDB {
   id: string;
   content: string;

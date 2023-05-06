@@ -1,20 +1,30 @@
 import { randomUUID } from "crypto";
 import { PostDatabase } from "../database/PostDatabase";
-import { Post, PostDB } from "../models/Post";
+import { Post, PostDB, PostModel } from "../models/Post";
 import { UserDatabase } from "../database/UserDatabase";
 import { LikesDislikesDatabase } from "../database/LikesDislikesDatabase";
+import { TokenManager } from "../services/TokenManager";
+import { IdGerator } from "../services/IdGerator";
 
 export class PostBusiness {
   constructor(
     private postDatabase: PostDatabase,
     private userDatabase: UserDatabase,
-    private likesOrDislikeDatabase: LikesDislikesDatabase
+    private likesOrDislikeDatabase: LikesDislikesDatabase,
+    private tokenManager: TokenManager,
+    private idGerator: IdGerator
   ) {}
 
-  getPosts = async () => {
+  getPosts = async (token: string): Promise<PostModel[]> => {
+    const tokenPayload = this.tokenManager.getPayload(token);
+
+    if (!tokenPayload) {
+      throw new Error("User não cadastrado.");
+    }
+
     const postsDB = await this.postDatabase.findAllPosts();
 
-    let posts: any;
+    let posts: PostModel[] = [];
 
     for (let postDB of postsDB) {
       const { id, name } = await this.userDatabase.findUserById(
@@ -34,16 +44,36 @@ export class PostBusiness {
         }
       );
 
-      posts = { ...posts, post };
+      const postToResult: PostModel = {
+        id: post.ID,
+        content: post.CONTENT,
+        likes: post.LIKES,
+        dislikes: post.DISLIKES,
+        createdAt: post.CREATEDAT,
+        updatedAt: post.CREATEDAT,
+        creator: post.CREATOR,
+      };
+
+      posts.push(postToResult);
     }
 
     return posts;
   };
 
-  createPost = async (content: string) => {
+  createPost = async (userPost: any) => {
+    const { token, content } = userPost;
+
+    const id = this.idGerator.gerate();
+
+    const tokenPayload = this.tokenManager.getPayload(token);
+
+    if (!tokenPayload) {
+      throw new Error("User inexistente.");
+    }
+
     const newPost = {
-      id: randomUUID(),
-      creator_id: "u366",
+      id,
+      creator_id: tokenPayload.id,
       content,
       likes: 0,
       dislikes: 0,
