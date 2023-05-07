@@ -5,6 +5,12 @@ import { UserDatabase } from "../database/UserDatabase";
 import { LikesDislikesDatabase } from "../database/LikesDislikesDatabase";
 import { TokenManager } from "../services/TokenManager";
 import { IdGerator } from "../services/IdGerator";
+import { CreatePostInputDTO } from "../dtos/postDTO/createPost.dto";
+import { UpdatePostInputDTO } from "../dtos/postDTO/updatePost.dto";
+import { DeletePostInputDTO } from "../dtos/postDTO/deletePost.dto";
+import { GetPostInputDTO } from "../dtos/postDTO/GetPosts.dto";
+import { string } from "zod";
+import { likeOrDislikeInputDTO } from "../dtos/postDTO/LikeOrDislike.dto";
 
 export class PostBusiness {
   constructor(
@@ -15,7 +21,7 @@ export class PostBusiness {
     private idGerator: IdGerator
   ) {}
 
-  getPosts = async (token: string): Promise<PostModel[]> => {
+  getPosts = async ({ token }: GetPostInputDTO): Promise<PostModel[]> => {
     const tokenPayload = this.tokenManager.getPayload(token);
 
     if (!tokenPayload) {
@@ -28,7 +34,7 @@ export class PostBusiness {
 
     for (let postDB of postsDB) {
       const { id, name } = await this.userDatabase.findUserById(
-        postDB.creator_id
+        postDB.creator_id as string
       );
 
       const post = new Post(
@@ -60,7 +66,7 @@ export class PostBusiness {
     return posts;
   };
 
-  createPost = async (userPost: any) => {
+  createPost = async (userPost: CreatePostInputDTO) => {
     const { token, content } = userPost;
 
     const id = this.idGerator.gerate();
@@ -71,22 +77,35 @@ export class PostBusiness {
       throw new Error("User inexistente.");
     }
 
-    const newPost = {
+    const newPost = new Post(
       id,
-      creator_id: tokenPayload.id,
       content,
-      likes: 0,
-      dislikes: 0,
-      created_at: new Date().toISOString(),
-      updated_at: "",
-    };
+      0,
+      0,
+      new Date().toISOString(),
+      "",
+      undefined,
+      tokenPayload.id
+    );
 
-    const response = await this.postDatabase.createPost(newPost);
+    const newPostDB = newPost.PostToDB();
+
+    const response: string = await this.postDatabase.createPost(newPostDB);
 
     return response;
   };
 
-  updatePost = async (content: string, id: string) => {
+  updatePost = async (input: UpdatePostInputDTO): Promise<string> => {
+    const { token, content } = input;
+
+    const tokenPayload = this.tokenManager.getPayload(token);
+
+    if (!tokenPayload) {
+      throw new Error("Usuário inexistente.");
+    }
+
+    const id = tokenPayload.id;
+
     const [postDB] = await this.postDatabase.findPostById(id);
 
     const post = new Post(
@@ -94,70 +113,80 @@ export class PostBusiness {
       postDB.content,
       postDB.likes,
       postDB.dislikes,
-      postDB.createdAt,
-      new Date().toISOString()
+      postDB.created_at,
+      new Date().toISOString(),
+      undefined,
+      id
     );
 
     content && (post.CONTENT = content);
 
-    const updatePostDB: PostDB = {
-      id: post.ID,
-      content: post.CONTENT,
-      likes: post.LIKES,
-      dislikes: post.DISLIKES,
-      created_at: post.CREATEDAT,
-      updated_at: post.UPDATEDAT,
-    };
+    const updatePostDB = post.PostToDB();
 
     const response = await this.postDatabase.editPost(updatePostDB, id);
-    return response;
-  };
-
-  deletePost = async (id: string) => {
-    const response = await this.postDatabase.deletePost(id);
 
     return response;
   };
 
-  likeOrDislikeBusiness = async (
-    idPost: string,
-    idUser: string,
-    like: boolean
-  ) => {
-    let response;
+  deletePost = async (postForDelete: DeletePostInputDTO): Promise<string> => {
+    const { id, token } = postForDelete;
 
-    const likeDB = !like ? 0 : 1;
+    const tokenPayload = this.tokenManager.getPayload(token);
+
+    if (!tokenPayload) {
+      throw new Error("Usuário inexistente.");
+    }
+
+    const response: string = await this.postDatabase.deletePost(id);
+
+    return response;
+  };
+
+  likeOrDislikeBusiness = async (postLikeOrDislike: likeOrDislikeInputDTO) => {
+    const { token, id, like } = postLikeOrDislike;
+
+    const tokenPayload = this.tokenManager.getPayload(token);
+
+    if (!tokenPayload) {
+      throw new Error("Usuário inexistente.");
+    }
+
+    let response: string;
+
+    const likeDB: number = !like ? 0 : 1;
 
     let newUserLikeOrDislikeDB: {
       user_id: string;
       post_id: string;
       like: number | null;
     } = {
-      user_id: idUser,
-      post_id: idPost,
+      user_id: tokenPayload.id,
+      post_id: id,
       like: likeDB,
     };
 
     const [postLikedExistDB] =
-      await this.likesOrDislikeDatabase.findLikesAndDislikesById(idUser);
+      await this.likesOrDislikeDatabase.findLikesAndDislikesById(
+        tokenPayload.id
+      );
 
-    const [postDB] = await this.postDatabase.findPostById(idPost);
+    const [postDB] = await this.postDatabase.findPostById(id);
 
     if (!postLikedExistDB) {
       let updatePost;
       if (!like) {
-        updatePost = { ...postDB, dislike: postDB.dislike + 1 };
+        updatePost = { ...postDB, dislike: postDB.dislikes + 1 };
       } else {
         updatePost = { ...postDB, likes: postDB.likes + 1 };
       }
 
-      await this.postDatabase.editPost(updatePost, idPost);
+      await this.postDatabase.editPost(updatePost, id);
 
       response = await this.likesOrDislikeDatabase.newLikesDislikes(
         newUserLikeOrDislikeDB
       );
     } else {
-      let updatePost;
+      let updatePost: PostDB | undefined;
 
       if (!like && postLikedExistDB.like === null) {
         updatePost = { ...postDB, dislikes: postDB.dislikes + 1 };
@@ -187,10 +216,10 @@ export class PostBusiness {
         };
       }
 
-      await this.postDatabase.editPost(updatePost, idPost);
+      await this.postDatabase.editPost(updatePost, id);
 
       response = await this.likesOrDislikeDatabase.updateLikeOrDislike(
-        idPost,
+        id,
         newUserLikeOrDislikeDB
       );
     }

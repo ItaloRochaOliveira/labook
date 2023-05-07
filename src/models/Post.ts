@@ -10,6 +10,7 @@ export interface PostModel {
 
 export interface PostDB {
   id: string;
+  creator_id?: string;
   content: string;
   likes: number;
   dislikes: number;
@@ -30,7 +31,8 @@ export class Post {
     private dislikes: number,
     private createdAt: string,
     private updatedAt: string,
-    private creator?: CreatorObj
+    private creator?: CreatorObj,
+    private creatorId?: string
   ) {}
 
   public get ID(): string {
@@ -87,5 +89,17 @@ export class Post {
 
   public set CREATOR(newCreator: CreatorObj | undefined) {
     this.creator = newCreator;
+  }
+
+  public PostToDB(): PostDB {
+    return {
+      id: this.id,
+      creator_id: this.creatorId,
+      content: this.content,
+      likes: this.likes,
+      dislikes: this.dislikes,
+      created_at: this.createdAt,
+      updated_at: this.updatedAt,
+    };
   }
 }
