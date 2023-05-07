@@ -5,6 +5,8 @@ import { CreatePostScheme } from "../dtos/postDTO/createPost.dto";
 import { GetPostSchema } from "../dtos/postDTO/GetPosts.dto";
 import { DeletePostScheme } from "../dtos/postDTO/deletePost.dto";
 import { likeOrDislikeScheme } from "../dtos/postDTO/LikeOrDislike.dto";
+import { ZodError } from "zod";
+import { BaseError } from "../customErrors/BaseError";
 
 export class PostController {
   constructor(private postBusiness: PostBusiness) {}
@@ -21,8 +23,10 @@ export class PostController {
     } catch (error) {
       console.log(error);
 
-      if (error instanceof Error) {
-        res.status(400).send("erro");
+      if (error instanceof ZodError) {
+        res.status(400).send(error.issues);
+      } else if (error instanceof BaseError) {
+        res.status(error.statusCode).send(error.message);
       } else {
         res.status(500).send("erro inesperado");
       }
@@ -44,8 +48,10 @@ export class PostController {
     } catch (error) {
       console.log(error);
 
-      if (error instanceof Error) {
-        res.status(400).send("erro");
+      if (error instanceof ZodError) {
+        res.status(400).send(error.issues);
+      } else if (error instanceof BaseError) {
+        res.status(error.statusCode).send(error.message);
       } else {
         res.status(500).send("erro inesperado");
       }
@@ -56,6 +62,7 @@ export class PostController {
     try {
       const intensForUpdate = UpdatePostScheme.parse({
         token: req.headers.authorization,
+        id: req.params.id,
         content: req.body.content,
       });
 
@@ -65,8 +72,10 @@ export class PostController {
     } catch (error) {
       console.log(error);
 
-      if (error instanceof Error) {
-        res.status(400).send("erro");
+      if (error instanceof ZodError) {
+        res.status(400).send(error.issues);
+      } else if (error instanceof BaseError) {
+        res.status(error.statusCode).send(error.message);
       } else {
         res.status(500).send("erro inesperado");
       }
@@ -86,8 +95,10 @@ export class PostController {
     } catch (error) {
       console.log(error);
 
-      if (error instanceof Error) {
-        res.status(400).send("erro");
+      if (error instanceof ZodError) {
+        res.status(400).send(error.issues);
+      } else if (error instanceof BaseError) {
+        res.status(error.statusCode).send(error.message);
       } else {
         res.status(500).send("erro inesperado");
       }
@@ -98,7 +109,7 @@ export class PostController {
     try {
       const postLikeOrDislike = likeOrDislikeScheme.parse({
         token: req.headers.authorization,
-        PostId: req.params.id,
+        id: req.params.id,
         like: req.body.like,
       });
 
@@ -110,8 +121,10 @@ export class PostController {
     } catch (error) {
       console.log(error);
 
-      if (error instanceof Error) {
-        res.status(400).send("erro");
+      if (error instanceof ZodError) {
+        res.status(400).send(error.issues);
+      } else if (error instanceof BaseError) {
+        res.status(error.statusCode).send(error.message);
       } else {
         res.status(500).send("erro inesperado");
       }

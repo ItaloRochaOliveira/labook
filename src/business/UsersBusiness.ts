@@ -1,3 +1,5 @@
+import { BadRequestError } from "../customErrors/BadRequestError";
+import { NotFoundError } from "../customErrors/NotFoundError";
 import { UserDatabase } from "../database/UserDatabase";
 import { LoginInputDTO } from "../dtos/userDTO/login.dto";
 import { SignupInputDTO, SignupOutputDTO } from "../dtos/userDTO/signup.dto";
@@ -16,6 +18,12 @@ export class userBusiness {
 
   signup = async (input: SignupInputDTO) => {
     const { name, email, password } = input;
+
+    const userDB = await this.userDatabase.findUserByEmail(email);
+
+    if (userDB) {
+      throw new BadRequestError("Usuário já existe com esse email.");
+    }
 
     const id = this.idGerator.gerate();
 
@@ -56,7 +64,7 @@ export class userBusiness {
     const userDB = await this.userDatabase.findUserByEmail(email);
 
     if (!userDB) {
-      throw new Error("Email informado errado.");
+      throw new NotFoundError("Email informado errado ou inexistente.");
     }
 
     const passwordHash = userDB.password;
@@ -67,7 +75,7 @@ export class userBusiness {
     );
 
     if (!isPasswordCorrect) {
-      throw new Error("Senha informada incorreta.");
+      throw new BadRequestError("Senha informada incorreta.");
     }
 
     const user = new Users(

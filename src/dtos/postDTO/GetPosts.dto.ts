@@ -10,6 +10,8 @@ export interface GetPostOutputDTO {
   products: PostModel;
 }
 
-export const GetPostSchema = z.object({
-  token: z.string().min(1),
-});
+export const GetPostSchema = z
+  .object({
+    token: z.string().min(1),
+  })
+  .transform((data) => data as GetPostInputDTO);
