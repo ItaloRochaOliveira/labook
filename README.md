@@ -46,7 +46,7 @@ signup, com o método post.
 signup e o id do post a ser editado, com o método put.
 -DeletePost: Pode deletar um post na API, mas só se informar o token criado no login ou
 signup e o id do post a ser deletado, com o método delete.
--LikeOrDislikePost - Mecanica de like ou dislike da API, mas só se for informado o token
+-LikeOrDislikePost - Mecânica de like ou dislike da API, mas só se for informado o token
 adquirido no login ou signup e o id do post a ser curtido, também será necessário informar
 no body o true ou false, onde true é like e false deslike.
 ```
