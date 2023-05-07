@@ -1,12 +1,19 @@
 import { Request, Response } from "express";
 import { PostBusiness } from "../business/PostBusiness";
+import { UpdatePostScheme } from "../dtos/postDTO/updatePost.dto";
+import { CreatePostScheme } from "../dtos/postDTO/createPost.dto";
+import { GetPostSchema } from "../dtos/postDTO/GetPosts.dto";
+import { DeletePostScheme } from "../dtos/postDTO/deletePost.dto";
+import { likeOrDislikeScheme } from "../dtos/postDTO/LikeOrDislike.dto";
 
 export class PostController {
   constructor(private postBusiness: PostBusiness) {}
 
   getAllPosts = async (req: Request, res: Response) => {
     try {
-      const token = req.headers.authorization as string;
+      const token = GetPostSchema.parse({
+        token: req.headers.authorization,
+      });
 
       const posts = await this.postBusiness.getPosts(token);
 
@@ -26,10 +33,10 @@ export class PostController {
     // const headers = req.headers.authorization;
 
     try {
-      const token = req.headers.authorization as string;
-      const { content } = req.body;
-
-      const userPost = { token, content };
+      const userPost = CreatePostScheme.parse({
+        token: req.headers.authorization,
+        content: req.body.content,
+      });
 
       const result = await this.postBusiness.createPost(userPost);
 
@@ -47,10 +54,12 @@ export class PostController {
 
   editPosts = async (req: Request, res: Response) => {
     try {
-      const id = req.params.id;
-      const { content } = req.body;
+      const intensForUpdate = UpdatePostScheme.parse({
+        token: req.headers.authorization,
+        content: req.body.content,
+      });
 
-      const response = await this.postBusiness.updatePost(content, id);
+      const response = await this.postBusiness.updatePost(intensForUpdate);
 
       res.status(200).send(response);
     } catch (error) {
@@ -66,9 +75,12 @@ export class PostController {
 
   deletePost = async (req: Request, res: Response) => {
     try {
-      const id = req.params.id;
+      const postForDelete = DeletePostScheme.parse({
+        token: req.headers.authorization,
+        id: req.params.id,
+      });
 
-      const response = await this.postBusiness.deletePost(id);
+      const response = await this.postBusiness.deletePost(postForDelete);
 
       res.status(200).send(response);
     } catch (error) {
@@ -84,14 +96,14 @@ export class PostController {
 
   likesOrDislikes = async (req: Request, res: Response) => {
     try {
-      const { id } = req.params;
-      const { idUser, like } = req.body;
+      const postLikeOrDislike = likeOrDislikeScheme.parse({
+        token: req.headers.authorization,
+        PostId: req.params.id,
+        like: req.body.like,
+      });
 
-      console.log(id, idUser, like);
       const response = await this.postBusiness.likeOrDislikeBusiness(
-        id,
-        idUser,
-        like
+        postLikeOrDislike
       );
 
       res.status(200).send(response);

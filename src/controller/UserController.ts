@@ -1,12 +1,18 @@
 import { Request, Response } from "express";
 import { userBusiness } from "../business/UsersBusiness";
+import { SignupScheme } from "../dtos/userDTO/signup.dto";
+import { loginScheme } from "../dtos/userDTO/login.dto";
 
 export class UserController {
   constructor(private userBusiness: userBusiness) {}
 
   signup = async (req: Request, res: Response) => {
     try {
-      const newUser = req.body;
+      const newUser = SignupScheme.parse({
+        name: req.body.name,
+        email: req.body.email,
+        password: req.body.password,
+      });
 
       const response = await this.userBusiness.signup(newUser);
 
@@ -24,7 +30,10 @@ export class UserController {
 
   login = async (req: Request, res: Response) => {
     try {
-      const user = req.body;
+      const user = loginScheme.parse({
+        email: req.body.email,
+        password: req.body.password,
+      });
 
       const response = await this.userBusiness.login(user);
 
