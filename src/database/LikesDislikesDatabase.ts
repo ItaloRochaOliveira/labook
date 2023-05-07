@@ -19,10 +19,15 @@ export class LikesDislikesDatabase extends BaseDatabase {
     return "Atualizado com sucesso!";
   };
 
-  updateLikeOrDislike = async (post_id: string, newLikeOrDislike: any) => {
+  updateLikeOrDislike = async (
+    user_id: string,
+    post_id: string,
+    newLikeOrDislike: any
+  ) => {
     await BaseDatabase.connection(this.LIKESDISLIKES_TABLE)
       .update(newLikeOrDislike)
-      .where({ post_id });
+      .where({ post_id })
+      .andWhere({ user_id });
 
     return "Atualizado com sucesso!";
   };

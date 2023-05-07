@@ -1,4 +1,3 @@
-import { randomUUID } from "crypto";
 import { PostDatabase } from "../database/PostDatabase";
 import { Post, PostDB, PostModel } from "../models/Post";
 import { UserDatabase } from "../database/UserDatabase";
@@ -9,8 +8,10 @@ import { CreatePostInputDTO } from "../dtos/postDTO/createPost.dto";
 import { UpdatePostInputDTO } from "../dtos/postDTO/updatePost.dto";
 import { DeletePostInputDTO } from "../dtos/postDTO/deletePost.dto";
 import { GetPostInputDTO } from "../dtos/postDTO/GetPosts.dto";
-import { string } from "zod";
 import { likeOrDislikeInputDTO } from "../dtos/postDTO/LikeOrDislike.dto";
+import { NotFoundError } from "../customErrors/NotFoundError";
+import { BadRequestError } from "../customErrors/BadRequestError";
+import { LikeOrDislikeDB } from "../models/LikeOrDislike";
 
 export class PostBusiness {
   constructor(
@@ -25,7 +26,7 @@ export class PostBusiness {
     const tokenPayload = this.tokenManager.getPayload(token);
 
     if (!tokenPayload) {
-      throw new Error("User não cadastrado.");
+      throw new NotFoundError("User não cadastrado.");
     }
 
     const postsDB = await this.postDatabase.findAllPosts();
@@ -74,7 +75,7 @@ export class PostBusiness {
     const tokenPayload = this.tokenManager.getPayload(token);
 
     if (!tokenPayload) {
-      throw new Error("User inexistente.");
+      throw new NotFoundError("User inexistente.");
     }
 
     const newPost = new Post(
@@ -96,15 +97,15 @@ export class PostBusiness {
   };
 
   updatePost = async (input: UpdatePostInputDTO): Promise<string> => {
-    const { token, content } = input;
+    const { token, id, content } = input;
 
     const tokenPayload = this.tokenManager.getPayload(token);
 
     if (!tokenPayload) {
-      throw new Error("Usuário inexistente.");
+      throw new NotFoundError("Usuário inexistente.");
     }
 
-    const id = tokenPayload.id;
+    const userId = tokenPayload.id;
 
     const [postDB] = await this.postDatabase.findPostById(id);
 
@@ -116,7 +117,7 @@ export class PostBusiness {
       postDB.created_at,
       new Date().toISOString(),
       undefined,
-      id
+      userId
     );
 
     content && (post.CONTENT = content);
@@ -129,13 +130,15 @@ export class PostBusiness {
   };
 
   deletePost = async (postForDelete: DeletePostInputDTO): Promise<string> => {
-    const { id, token } = postForDelete;
+    const { token, id } = postForDelete;
 
     const tokenPayload = this.tokenManager.getPayload(token);
 
     if (!tokenPayload) {
-      throw new Error("Usuário inexistente.");
+      throw new NotFoundError("Usuário inexistente.");
     }
+
+    await this.likesOrDislikeDatabase.deleteLikeOrDislike(id);
 
     const response: string = await this.postDatabase.deletePost(id);
 
@@ -148,39 +151,43 @@ export class PostBusiness {
     const tokenPayload = this.tokenManager.getPayload(token);
 
     if (!tokenPayload) {
-      throw new Error("Usuário inexistente.");
+      throw new NotFoundError("Usuário inexistente.");
     }
+
+    const userId = tokenPayload.id;
+    const postId = id;
 
     let response: string;
 
     const likeDB: number = !like ? 0 : 1;
 
-    let newUserLikeOrDislikeDB: {
-      user_id: string;
-      post_id: string;
-      like: number | null;
-    } = {
-      user_id: tokenPayload.id,
-      post_id: id,
+    let newUserLikeOrDislikeDB: LikeOrDislikeDB = {
+      user_id: userId,
+      post_id: postId,
       like: likeDB,
     };
 
     const [postLikedExistDB] =
-      await this.likesOrDislikeDatabase.findLikesAndDislikesById(
-        tokenPayload.id
+      await this.likesOrDislikeDatabase.findLikesAndDislikesById(userId);
+
+    const [postDB] = await this.postDatabase.findPostById(postId);
+
+    if (postDB.creator_id === userId) {
+      throw new BadRequestError(
+        "Não é possivel o criador dar dislike ou like no próprio post."
       );
+    }
 
-    const [postDB] = await this.postDatabase.findPostById(id);
-
-    if (!postLikedExistDB) {
+    if (!postLikedExistDB || postLikedExistDB.post_id !== postId) {
       let updatePost;
+
       if (!like) {
-        updatePost = { ...postDB, dislike: postDB.dislikes + 1 };
+        updatePost = { ...postDB, dislikes: postDB.dislikes + 1 };
       } else {
         updatePost = { ...postDB, likes: postDB.likes + 1 };
       }
 
-      await this.postDatabase.editPost(updatePost, id);
+      await this.postDatabase.editPost(updatePost, postId);
 
       response = await this.likesOrDislikeDatabase.newLikesDislikes(
         newUserLikeOrDislikeDB
@@ -216,10 +223,11 @@ export class PostBusiness {
         };
       }
 
-      await this.postDatabase.editPost(updatePost, id);
+      await this.postDatabase.editPost(updatePost, postId);
 
       response = await this.likesOrDislikeDatabase.updateLikeOrDislike(
-        id,
+        userId,
+        postId,
         newUserLikeOrDislikeDB
       );
     }
