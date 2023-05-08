@@ -1,4 +1,4 @@
-# **Projeto Labecommerce-backend**
+# **Projeto Labook**
 
 ## 📖 Introdução
 
